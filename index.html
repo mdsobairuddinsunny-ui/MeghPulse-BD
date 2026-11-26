@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="bn" data-wx="clear">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#040d1a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="MeghPulse BD" />
+<title>MeghPulse BD — Live Weather, Radar, Aviation & Storm Command</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%23051326'/%3E%3Ccircle cx='50' cy='50' r='34' fill='none' stroke='%2338bdf8' stroke-width='4' opacity='.4'/%3E%3Cpath d='M55 18L30 55h18l-4 27 26-38H52z' fill='%2338bdf8'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
+<style>
+:root{--bg1:#040c18;--bg2:#0a1f3a;--bg3:#020710;--card:rgba(9,24,46,.72);--cardS:rgba(6,17,34,.93);--bd:rgba(56,189,248,.22);--bdH:rgba(125,211,252,.65);--c1:#e0f2fe;--c2:#38bdf8;--c3:#0284c7;--acc:#fbbf24;--glow:rgba(56,189,248,.3);--txt:#f0f7ff;--soft:#bfd5ea;--mut:#7c9bb8;--ok:#34d399;--wrn:#fbbf24;--err:#fb7185;--bn:'Hind Siliguri',sans-serif;--num:'Plus Jakarta Sans',sans-serif}
+html[data-wx="sun"]{--bg1:#08162b;--bg2:#12335c;--bg3:#040c18;--c2:#38bdf8;--acc:#fcd34d;--glow:rgba(56,189,248,.34)}
+html[data-wx="rain"]{--bg1:#06111e;--bg2:#11273f;--bg3:#030912;--c2:#60a5fa;--acc:#93c5fd;--glow:rgba(96,165,250,.32)}
+html[data-wx="storm"]{--bg1:#0c071c;--bg2:#211145;--bg3:#05030d;--card:rgba(22,12,48,.76);--bd:rgba(167,139,250,.32);--bdH:rgba(196,181,253,.82);--c2:#a78bfa;--acc:#fde047;--glow:rgba(167,139,250,.42)}
+html[data-wx="night"]{--bg1:#030712;--bg2:#0c1730;--bg3:#010308;--c2:#38bdf8;--acc:#e2e8f0;--glow:rgba(56,189,248,.28)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;min-height:100%;overflow-x:hidden;font-family:var(--bn);color:var(--txt);background:radial-gradient(circle at 18% 10%,var(--bg2),var(--bg1) 54%,var(--bg3));background-attachment:fixed;transition:background 1s ease}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--c2),var(--c3));border-radius:10px}
+#wxCanvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.flash-ov{position:fixed;inset:0;pointer-events:none;z-index:3;background:radial-gradient(circle at 50% 20%,rgba(196,181,253,.38),transparent 70%);opacity:0;transition:opacity .15s}
+.flash-ov.zap{opacity:1}
+.shell{position:relative;z-index:2;max-width:1280px;margin:0 auto;padding:10px 12px calc(88px + env(safe-area-inset-bottom))}
+.hdr{position:sticky;top:8px;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-radius:20px;background:var(--cardS);border:1px solid var(--bd);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 14px 36px rgba(0,0,0,.48);margin-bottom:12px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,rgba(56,189,248,.25),rgba(167,139,250,.22));border:1px solid var(--bdH);display:grid;place-items:center;box-shadow:0 0 20px var(--glow);animation:flt 3.8s ease-in-out infinite}
+.btit{font-family:var(--num);font-size:1.12rem;font-weight:800;letter-spacing:.3px;background:linear-gradient(90deg,#fff,var(--c2),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.bsub{font-size:.7rem;color:var(--mut);display:flex;align-items:center;gap:5px}
+.ldot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok);display:inline-block;animation:pls 1.6s infinite}
+.dnav{display:none;gap:5px}@media(min-width:980px){.dnav{display:flex}.dock{display:none!important}.shell{padding-bottom:32px}}
+.hacts{display:flex;align-items:center;gap:6px}
+.ibtn{height:36px;padding:0 10px;border-radius:11px;border:1px solid var(--bd);background:rgba(255,255,255,.04);color:var(--c1);cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:var(--bn);font-size:.8rem;font-weight:600;transition:.22s}
+.ibtn:hover,.ibtn.on{background:linear-gradient(135deg,rgba(56,189,248,.26),rgba(14,165,233,.16));border-color:var(--bdH);box-shadow:0 4px 16px var(--glow)}
+.sbar-wrap{position:relative;margin-bottom:12px}
+.srow{display:flex;gap:7px}
+.inp{width:100%;padding:11px 14px;border-radius:14px;background:var(--cardS);border:1px solid var(--bd);color:var(--txt);font-family:var(--bn);font-size:.93rem;outline:none;transition:.2s}
+.inp:focus{border-color:var(--bdH);box-shadow:0 0 0 3px var(--glow)}
+.sdrop{position:absolute;top:100%;left:0;right:0;z-index:60;margin-top:6px;border-radius:15px;background:var(--cardS);border:1px solid var(--bdH);box-shadow:0 18px 40px rgba(0,0,0,.65);display:none;max-height:280px;overflow-y:auto}
+.sdrop.on{display:block}
+.sopt{padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;font-size:.9rem}
+.sopt:hover{background:rgba(56,189,248,.16)}
+.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px}
+.chip{padding:7px 13px;border-radius:999px;white-space:nowrap;cursor:pointer;background:rgba(255,255,255,.045);border:1px solid var(--bd);color:var(--soft);font-family:var(--bn);font-size:.82rem;font-weight:600;transition:.2s}
+.chip.on,.chip:hover{background:linear-gradient(135deg,var(--c2),var(--c3));color:#02101c;border-color:var(--c1);font-weight:700;box-shadow:0 4px 14px var(--glow)}
+.storm-bar{display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 15px;border-radius:17px;margin-bottom:12px;background:linear-gradient(90deg,rgba(167,139,250,.28),rgba(251,113,133,.22),rgba(250,204,21,.2));border:1px solid rgba(253,224,71,.7);box-shadow:0 0 28px rgba(167,139,250,.45);animation:up .35s ease}
+.storm-bar.on{display:flex}
+.zap-ico{font-size:1.5rem;animation:zapPls 1.1s infinite}
+.vw{display:none;animation:up .35s ease}.vw.on{display:block}
+.card{border-radius:22px;padding:16px;background:var(--card);border:1px solid var(--bd);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 16px 38px rgba(0,0,0,.42);margin-bottom:14px}
+.shd{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.ttl{font-size:1.15rem;font-weight:700;background:linear-gradient(90deg,#fff,var(--c2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.pill{padding:4px 11px;border-radius:999px;font-size:.74rem;font-weight:700;background:rgba(255,255,255,.06);border:1px solid var(--bd);color:var(--c1);display:inline-flex;align-items:center;gap:5px}
+.hero-grid{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:860px){.hero-grid{grid-template-columns:1.15fr 1fr}}
+.big-temp{font-family:var(--num);font-size:clamp(3rem,10vw,4.6rem);font-weight:800;line-height:1;background:linear-gradient(180deg,#fff,var(--c2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.mgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+@media(min-width:560px){.mgrid{grid-template-columns:repeat(4,1fr)}}
+.mbox{padding:11px;border-radius:15px;background:rgba(0,0,0,.28);border:1px solid rgba(125,211,252,.16);transition:.22s}
+.mbox:hover{border-color:var(--bdH);transform:translateY(-2px)}
+.mlbl{font-size:.74rem;color:var(--mut);margin-bottom:3px}
+.mval{font-family:var(--num);font-size:1.08rem;font-weight:800;color:var(--c1)}
+.ai-brief{padding:12px 14px;border-radius:15px;background:linear-gradient(135deg,rgba(56,189,248,.13),rgba(167,139,250,.1));border:1px solid var(--bdH);font-size:.92rem;line-height:1.68;color:var(--txt);margin-top:12px}
+.map-shell{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--bdH);background:#05101f;box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.map-shell.fs{position:fixed!important;inset:0!important;z-index:120!important;border-radius:0!important;height:100vh!important}
+.map-frame{width:100%;height:430px;border:none;display:block;background:#04101f}
+@media(min-width:860px){.map-frame{height:520px}}
+.map-shell.fs .map-frame{height:calc(100vh - 54px)!important}
+.map-top-hud{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:9px 12px;background:rgba(4,13,26,.92);border-bottom:1px solid var(--bd)}
+.hstrip{display:flex;gap:9px;overflow-x:auto;padding-bottom:6px}
+.hcard{min-width:88px;padding:11px 9px;border-radius:16px;text-align:center;background:rgba(0,0,0,.3);border:1px solid var(--bd);flex-shrink:0;transition:.2s}
+.hcard:hover{border-color:var(--bdH);transform:translateY(-2px)}
+.dcard{display:grid;grid-template-columns:1.1fr auto 1fr auto;align-items:center;gap:8px;padding:11px 13px;border-radius:15px;background:rgba(0,0,0,.26);border:1px solid rgba(125,211,252,.14);margin-bottom:8px}
+.sun-arc-wrap{width:100%;max-width:520px;margin:6px auto 14px;text-align:center}
+.astro-grid{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:820px){.astro-grid{grid-template-columns:1.2fr 1fr}}
+.mod-tbl{width:100%;border-collapse:collapse;font-size:.88rem}
+.mod-tbl th,.mod-tbl td{padding:10px 8px;text-align:center;border-bottom:1px solid rgba(125,211,252,.14)}
+.mod-tbl th{color:var(--c2);font-weight:700;background:rgba(0,0,0,.25)}
+.spec-grid{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:840px){.spec-grid{grid-template-columns:1fr 1fr}}
+.cmp-grid{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:780px){.cmp-grid{grid-template-columns:1fr 1fr}}
+.btnP{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 15px;border-radius:12px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--c2),var(--c3));color:#02101c;font-family:var(--bn);font-size:.86rem;font-weight:700;box-shadow:0 6px 18px var(--glow);transition:.2s}
+.btnP:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.btnO{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px 12px;border-radius:11px;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--c1);font-family:var(--bn);font-size:.82rem;font-weight:600;transition:.2s}
+.btnO:hover{background:rgba(56,189,248,.16);border-color:var(--bdH)}
+.risk-pill{padding:4px 11px;border-radius:999px;font-size:.76rem;font-weight:700}
+.risk-low{background:rgba(52,211,153,.18);color:#6ee7b7;border:1px solid rgba(52,211,153,.45)}
+.risk-mid{background:rgba(251,191,36,.18);color:#fde68a;border:1px solid rgba(251,191,36,.45)}
+.risk-hi{background:rgba(251,113,133,.22);color:#fda4af;border:1px solid rgba(251,113,133,.55)}
+.dock{position:fixed;left:9px;right:9px;bottom:calc(9px + env(safe-area-inset-bottom));z-index:55;display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:6px 5px;border-radius:20px;background:var(--cardS);border:1px solid var(--bdH);backdrop-filter:blur(22px);box-shadow:0 14px 36px rgba(0,0,0,.62),0 0 20px var(--glow)}
+.ditm{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:13px;border:none;background:transparent;color:var(--mut);font-family:var(--bn);font-size:.67rem;font-weight:600;cursor:pointer}
+.ditm span{font-size:1.18rem;line-height:1}
+.ditm.on{background:linear-gradient(135deg,rgba(56,189,248,.24),rgba(14,165,233,.2));color:var(--c1)}
+.tst{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-100px);z-index:250;padding:10px 18px;border-radius:999px;background:linear-gradient(135deg,var(--c2),#7dd3fc);color:#031222;font-weight:700;font-size:.86rem;box-shadow:0 12px 28px rgba(0,0,0,.5);transition:.32s;max-width:92vw;text-align:center}
+.tst.on{transform:translateX(-50%) translateY(0)}
+@keyframes flt{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes pls{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(1.3)}}
+@keyframes zapPls{0%,100%{transform:scale(1);filter:drop-shadow(0 0 8px #fde047)}50%{transform:scale(1.22);filter:drop-shadow(0 0 18px #a78bfa)}}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<canvas id="wxCanvas"></canvas>
+<div class="flash-ov" id="flashOv"></div>
+<div class="tst" id="tst"></div>
+
+<div class="shell">
+  <header class="hdr">
+    <div class="brand">
+      <div class="logo">⚡</div>
+      <div>
+        <div class="btit">MeghPulse BD</div>
+        <div class="bsub"><span class="ldot"></span><span id="liveClk">BST --:--:--</span> • <span id="locShort">Dhaka, BD</span></div>
+      </div>
+    </div>
+    <nav class="dnav">
+      <button class="ibtn on" data-t="home" onclick="MP.tab('home')" id="dn-home">🌐 রাডার ও আবহাওয়া</button>
+      <button class="ibtn" data-t="astro" onclick="MP.tab('astro')" id="dn-astro">☀️ সূর্য ও চাঁদ</button>
+      <button class="ibtn" data-t="plane" onclick="MP.tab('plane')" id="dn-plane">✈️ প্লেন রাডার</button>
+      <button class="ibtn" data-t="pro" onclick="MP.tab('pro')" id="dn-pro">🌊 বাংলাদেশ প্রো</button>
+      <button class="ibtn" data-t="cmp" onclick="MP.tab('cmp')" id="dn-cmp">⚖️ ২ শহর তুলনা</button>
+    </nav>
+    <div class="hacts">
+      <button class="ibtn" id="langBtn" onclick="MP.toggleLang()">EN</button>
+      <button class="ibtn" id="sndBtn" onclick="MP.toggleSound()" title="Alert Sound">🔊</button>
+      <button class="ibtn" onclick="MP.useGPS()" title="My GPS">📍</button>
+    </div>
+  </header>
+
+  <div class="sbar-wrap">
+    <div class="srow">
+      <input class="inp" id="searchInp" placeholder="বাংলাদেশের যেকোনো জেলা/উপজেলা বা বিশ্বের যেকোনো শহর খুঁজুন..." oninput="MP.searchCity()" onkeydown="if(event.key==='Enter')MP.searchCity(true)" />
+      <button class="btnP" onclick="MP.refreshAll()" id="refBtn">🔄</button>
+    </div>
+    <div class="sdrop" id="sdrop"></div>
+  </div>
+
+  <div class="chips" id="bdChips"></div>
+
+  <div class="storm-bar" id="stormBar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="zap-ico">⚡</span>
+      <div>
+        <div id="stormTitle" style="font-weight:800;color:#fde047;font-size:.98rem">বজ্রপাত ও ঝড় সতর্কতা!</div>
+        <div id="stormDesc" style="font-size:.82rem;color:var(--txt)">আশেপাশে সক্রিয় বজ্রমেঘ ও দমকা হাওয়া শনাক্ত হয়েছে।</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btnP" onclick="MP.setLayer('radar');MP.tab('home')" id="stormMapBtn">📡 রাডার দেখুন</button>
+      <button class="btnO" onclick="MP.dismissStorm()">✖</button>
+    </div>
+  </div>
+
+  <!-- TAB 1: LIVE WEATHER COMMAND CENTER & WINDY MULTI-LAYER RADAR -->
+  <section id="v-home" class="vw on">
+    <div class="hero-grid">
+      <div class="card">
+        <div class="shd">
+          <div>
+            <div class="ttl" id="locFull">ঢাকা, বাংলাদেশ</div>
+            <div id="locCoords" style="font-size:.76rem;color:var(--mut)">23.81°N, 90.41°E • ECMWF Live</div>
+          </div>
+          <span class="risk-pill risk-low" id="stormRiskBadge">⚡ ঝড়ের ঝুঁকি: কম</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div id="wxEmoji" style="font-size:3.8rem;line-height:1;filter:drop-shadow(0 0 18px var(--glow))">⛅</div>
+            <div>
+              <div class="big-temp" id="curTemp">--°C</div>
+              <div id="curCond" style="font-size:1rem;font-weight:600;color:var(--c1)">লোড হচ্ছে...</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:.84rem;color:var(--soft)"><span id="lblFeel">অনুভূত</span>: <b id="curFeel">--°</b></div>
+            <div style="font-size:.84rem;color:var(--soft)"><span id="lblHiLo">সর্বোচ্চ / সর্বনিম্ন</span>: <b id="curHiLo">--° / --°</b></div>
+            <button class="btnO" style="margin-top:6px;padding:5px 10px;font-size:.75rem" onclick="MP.testStormAlert()" id="testStormBtn">⚡ ঝড় অ্যালার্ট টেস্ট</button>
+          </div>
+        </div>
+        <div class="mgrid">
+          <div class="mbox"><div class="mlbl" id="l-wind">💨 বাতাস ও দমকা</div><div class="mval" id="mWind">--</div></div>
+          <div class="mbox"><div class="mlbl" id="l-rain">🌧️ বৃষ্টি / সম্ভাবনা</div><div class="mval" id="mRain">--</div></div>
+          <div class="mbox"><div class="mlbl" id="l-hum">💧 আর্দ্রতা / শিশির</div><div class="mval" id="mHum">--</div></div>
+          <div class="mbox"><div class="mlbl" id="l-pres">🌀 চাপ ও দৃশ্যমানতা</div><div class="mval" id="mPres">--</div></div>
+          <div class="mbox"><div class="mlbl" id="l-cape">⚡ বজ্রশক্তি (CAPE)</div><div class="mval" id="mCape">--</div></div>
+          <div class="mbox"><div class="mlbl" id="l-uv">☀️ UV সূচক</div><div class="mval" id="mUv">--</div></div>
+          <div class="mbox"><div class="mlbl" id="l-cld">☁️ মেঘের আবরণ</div><div class="mval" id="mCld">--</div></div>
+          <div class="mbox"><div class="mlbl" id="l-aqi">🫧 এয়ার কোয়ালিটি</div><div class="mval" id="mAqi">--</div></div>
+        </div>
+        <div class="ai-brief" id="aiBrief">✨ স্মার্ট আবহাওয়া বিশ্লেষণ তৈরি হচ্ছে...</div>
+      </div>
+
+      <div class="card" style="padding:12px">
+        <div class="shd" style="margin-bottom:8px">
+          <div class="ttl" id="lblRadarTitle">🛰️ লাইভ মাল্টি-লেয়ার রাডার (Windy Engine)</div>
+          <div style="display:flex;gap:5px">
+            <button class="btnO" id="mod-ecmwf" onclick="MP.setModel('ecmwf')">ECMWF</button>
+            <button class="btnO" id="mod-gfs" onclick="MP.setModel('gfs')">GFS</button>
+            <button class="btnO" id="mod-icon" onclick="MP.setModel('icon')">ICON</button>
+          </div>
+        </div>
+        <div class="chips" id="layerChips" style="margin-bottom:9px"></div>
+        <div class="map-shell" id="windyShell">
+          <div class="map-top-hud">
+            <span class="pill" id="activeLayerPill">🌧️ Rain & Thunder • ECMWF</span>
+            <button class="btnO" style="padding:5px 10px;font-size:.76rem" onclick="MP.toggleFS('windyShell')" id="fsBtn">⛶ ফুলস্ক্রিন</button>
+          </div>
+          <iframe class="map-frame" id="windyFrame" allow="geolocation" loading="lazy"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="shd"><div class="ttl" id="lblHourly">🕒 আগামী ২৪ ঘণ্টার পূর্বাভাস (ECMWF)</div><span class="pill" id="lblStep">প্রতি ঘণ্টা</span></div>
+      <div class="hstrip" id="hourlyStrip"></div>
+    </div>
+
+    <div class="card">
+      <div class="shd"><div class="ttl" id="lblDaily">📅 আগামী ১০ দিনের বিস্তারিত পূর্বাভাস</div><span class="pill">ECMWF 10-Day</span></div>
+      <div id="dailyList"></div>
+    </div>
+  </section>
+
+  <!-- TAB 2: WINDY-EXACT SUNRISE, SUNSET, MOONRISE, MOONSET & LIVE ARC -->
+  <section id="v-astro" class="vw">
+    <div class="astro-grid">
+      <div class="card">
+        <div class="shd"><div class="ttl" id="lblSunTtl">☀️ সূর্যের গতিপথ ও সময়সূচি (Windy Exact)</div><span class="pill" id="sunPctPill">দিন --%</span></div>
+        <div class="sun-arc-wrap">
+          <svg viewBox="0 0 360 175" style="width:100%;overflow:visible">
+            <defs>
+              <linearGradient id="arcG" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f59e0b"/><stop offset="50%" stop-color="#fde047"/><stop offset="100%" stop-color="#fb7185"/></linearGradient>
+              <radialGradient id="sunGlow"><stop offset="0%" stop-color="#fff7cc"/><stop offset="55%" stop-color="#fbbf24"/><stop offset="100%" stop-color="rgba(251,191,36,0)"/></radialGradient>
+            </defs>
+            <line x1="16" y1="145" x2="344" y2="145" stroke="rgba(125,211,252,.28)" stroke-dasharray="5 5" stroke-width="1.5"/>
+            <path d="M 30 145 A 150 122 0 0 1 330 145" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="4"/>
+            <path id="sunProgPath" d="M 30 145 A 150 122 0 0 1 330 145" fill="none" stroke="url(#arcG)" stroke-width="4.5" stroke-linecap="round"/>
+            <circle id="sunGlowOrb" cx="180" cy="23" r="22" fill="url(#sunGlow)"/>
+            <circle id="sunDot" cx="180" cy="23" r="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="2.5"/>
+            <text id="svgRise" x="30" y="166" fill="#fde68a" font-size="12" font-weight="700" text-anchor="middle">--:--</text>
+            <text id="svgNoon" x="180" y="166" fill="#93c5fd" font-size="11" text-anchor="middle">--:--</text>
+            <text id="svgSet" x="330" y="166" fill="#fda4af" font-size="12" font-weight="700" text-anchor="middle">--:--</text>
+          </svg>
+        </div>
+        <div class="mgrid">
+          <div class="mbox"><div class="mlbl" id="as-rise">🌅 সূর্যোদয় (Sunrise)</div><div class="mval" id="vSunrise">--:--</div></div>
+          <div class="mbox"><div class="mlbl" id="as-set">🌇 সূর্যাস্ত (Sunset)</div><div class="mval" id="vSunset">--:--</div></div>
+          <div class="mbox"><div class="mlbl" id="as-dawn">🌄 ভোর / Dawn</div><div class="mval" id="vDawn">--:--</div></div>
+          <div class="mbox"><div class="mlbl" id="as-dusk">🌆 গোধূলি / Dusk</div><div class="mval" id="vDusk">--:--</div></div>
+          <div class="mbox"><div class="mlbl" id="as-noon">☀️ মধ্যাহ্ন (Solar Noon)</div><div class="mval" id="vNoon">--:--</div></div>
+          <div class="mbox"><div class="mlbl" id="as-gold">✨ গোল্ডেন আওয়ার</div><div class="mval" id="vGold">--:--</div></div>
+          <div class="mbox"><div class="mlbl" id="as-len">⏱️ দিনের দৈর্ঘ্য</div><div class="mval" id="vDayLen">--</div></div>
+          <div class="mbox"><div class="mlbl" id="as-alt">📐 সূর্যের উচ্চতা</div><div class="mval" id="vSunAlt">--°</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="shd"><div class="ttl" id="lblMoonTtl">🌙 চাঁদের সময় ও কলা (Lunar Telemetry)</div><span class="pill" id="moonPctPill">--%</span></div>
+        <div style="text-align:center;padding:12px 0 18px">
+          <div id="moonEmoji" style="font-size:4.4rem;line-height:1;filter:drop-shadow(0 0 24px rgba(226,232,240,.5))">🌕</div>
+          <div id="moonPhaseName" style="font-size:1.15rem;font-weight:700;color:var(--c1);margin-top:8px">--</div>
+          <div id="moonIllumTxt" style="font-size:.84rem;color:var(--mut);margin-top:3px">--</div>
+        </div>
+        <div class="mgrid" style="grid-template-columns:1fr 1fr">
+          <div class="mbox"><div class="mlbl" id="as-mrise">🌕 চন্দ্রোদয় (Moonrise)</div><div class="mval" id="vMoonrise">--:--</div></div>
+          <div class="mbox"><div class="mlbl" id="as-mset">🌑 চন্দ্রাস্ত (Moonset)</div><div class="mval" id="vMoonset">--:--</div></div>
+          <div class="mbox"><div class="mlbl" id="as-malt">📐 চাঁদের উচ্চতা</div><div class="mval" id="vMoonAlt">--°</div></div>
+          <div class="mbox"><div class="mlbl" id="as-maz">🧭 চাঁদের দিক</div><div class="mval" id="vMoonAz">--°</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 3: LIVE PLANE RADAR (ADS-B AVIATION OVER BANGLADESH & WORLD) -->
+  <section id="v-plane" class="vw">
+    <div class="card">
+      <div class="shd">
+        <div>
+          <div class="ttl" id="lblPlaneTtl">✈️ লাইভ প্লেন রাডার (Bangladesh & Global ADS-B)</div>
+          <div style="font-size:.8rem;color:var(--mut)" id="planeSub">বাংলাদেশ ও বিশ্বের আকাশে বর্তমানে উড্ডয়নরত বিমানের লাইভ অবস্থান</div>
+        </div>
+        <span class="pill" id="planeCountPill">✈️ লাইভ ADS-B ফিড</span>
+      </div>
+      <div class="chips" id="airportChips"></div>
+      <div class="map-shell" id="planeShell">
+        <div class="map-top-hud">
+          <span class="pill" id="airportBadge">✈️ Dhaka Hazrat Shahjalal (DAC)</span>
+          <button class="btnO" style="padding:5px 10px;font-size:.76rem" onclick="MP.toggleFS('planeShell')">⛶ ফুলস্ক্রিন</button>
+        </div>
+        <iframe class="map-frame" id="planeFrame" style="height:500px" loading="lazy"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 4: BANGLADESH PRO INTELLIGENCE (MULTI-MODEL, MARINE, FLOOD, AQI, QUAKES) -->
+  <section id="v-pro" class="vw">
+    <div class="card">
+      <div class="shd"><div class="ttl" id="lblModTtl">🧠 ৪ সুপারকম্পিউটার মডেল তুলনা (আগামী ২৪ ঘণ্টা)</div><span class="pill">ECMWF • AIFS AI • GFS • ICON</span></div>
+      <div style="overflow-x:auto">
+        <table class="mod-tbl">
+          <thead><tr><th id="th-m">মডেল</th><th id="th-t">সর্বোচ্চ / সর্বনিম্ন</th><th id="th-r">মোট বৃষ্টি</th><th id="th-w">সর্বোচ্চ বাতাস</th></tr></thead>
+          <tbody id="modelBody"><tr><td colspan="4" style="color:var(--mut)">লোড হচ্ছে...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="spec-grid">
+      <div class="card">
+        <div class="shd"><div class="ttl" id="lblMarTtl">🌊 বঙ্গোপসাগর ও উপকূলীয় মেরিন রাডার</div><span class="risk-pill risk-low" id="seaBadge">--</span></div>
+        <div class="chips" id="coastChips"></div>
+        <div class="mgrid" style="grid-template-columns:1fr 1fr">
+          <div class="mbox"><div class="mlbl">🌊 ঢেউয়ের উচ্চতা</div><div class="mval" id="marWave">--</div></div>
+          <div class="mbox"><div class="mlbl">🌀 সোয়েল (Swell)</div><div class="mval" id="marSwell">--</div></div>
+          <div class="mbox"><div class="mlbl">⏱️ ঢেউয়ের ব্যবধান</div><div class="mval" id="marPer">--</div></div>
+          <div class="mbox"><div class="mlbl">🧭 ঢেউয়ের দিক</div><div class="mval" id="marDir">--</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="shd"><div class="ttl" id="lblFldTtl">🏞️ বাংলাদেশ নদী ও বন্যা পূর্বাভাস</div><span class="risk-pill risk-low" id="fldBadge">--</span></div>
+        <div class="chips" id="riverChips"></div>
+        <div class="mgrid" style="grid-template-columns:1fr 1fr">
+          <div class="mbox"><div class="mlbl">💧 আজকের প্রবাহ</div><div class="mval" id="fldNow">--</div></div>
+          <div class="mbox"><div class="mlbl">📈 ৭ দিনের সর্বোচ্চ</div><div class="mval" id="fldMax">--</div></div>
+        </div>
+        <div id="fldNote" style="font-size:.82rem;color:var(--soft);margin-top:10px">GloFAS River Discharge Model</div>
+      </div>
+
+      <div class="card">
+        <div class="shd"><div class="ttl" id="lblAqiTtl">🫧 লাইভ এয়ার কোয়ালিটি (AQI & Health)</div><span class="risk-pill risk-low" id="aqiBadge">--</span></div>
+        <div class="mgrid" style="grid-template-columns:1fr 1fr">
+          <div class="mbox"><div class="mlbl">US AQI</div><div class="mval" id="aqVal">--</div></div>
+          <div class="mbox"><div class="mlbl">PM2.5 (µg/m³)</div><div class="mval" id="aqPm25">--</div></div>
+          <div class="mbox"><div class="mlbl">PM10 (µg/m³)</div><div class="mval" id="aqPm10">--</div></div>
+          <div class="mbox"><div class="mlbl">ধুলো / ওজোন</div><div class="mval" id="aqDust">--</div></div>
+        </div>
+        <div id="aqiAdvice" style="font-size:.84rem;color:var(--c1);margin-top:10px"></div>
+      </div>
+
+      <div class="card">
+        <div class="shd"><div class="ttl" id="lblEqTtl">🌋 লাইভ ভূমিকম্প রাডার (বাংলাদেশ ও দক্ষিণ এশিয়া)</div><span class="pill">USGS Live</span></div>
+        <div id="eqList" style="max-height:230px;overflow-y:auto;font-size:.86rem">লোড হচ্ছে...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 5: ANY LOCATION TO ANY LOCATION COMPARE -->
+  <section id="v-cmp" class="vw">
+    <div class="card">
+      <div class="shd"><div class="ttl" id="lblCmpTtl">⚖️ যেকোনো ২ শহরের লাইভ আবহাওয়া তুলনা</div><span class="pill">Travel & Compare</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:14px">
+        <input class="inp" id="cmpA" value="Dhaka" placeholder="শহর ১ (যেমন: Dhaka)" />
+        <input class="inp" id="cmpB" value="Cox's Bazar" placeholder="শহর ২ (যেমন: Sylhet / London)" />
+        <button class="btnP" onclick="MP.runCompare()" id="cmpBtn">তুলনা করুন</button>
+      </div>
+      <div class="cmp-grid" id="cmpOut"><div style="color:var(--mut)">তুলনা দেখতে বাটনে ক্লিক করুন...</div></div>
+    </div>
+  </section>
+</div>
+
+<nav class="dock">
+  <button class="ditm on" data-t="home" onclick="MP.tab('home')"><span>🌐</span><b id="mn-home">রাডার</b></button>
+  <button class="ditm" data-t="astro" onclick="MP.tab('astro')"><span>☀️</span><b id="mn-astro">সূর্য-চাঁদ</b></button>
+  <button class="ditm" data-t="plane" onclick="MP.tab('plane')"><span>✈️</span><b id="mn-plane">প্লেন</b></button>
+  <button class="ditm" data-t="pro" onclick="MP.tab('pro')"><span>🌊</span><b id="mn-pro">বিডি প্রো</b></button>
+  <button class="ditm" data-t="cmp" onclick="MP.tab('cmp')"><span>⚖️</span><b id="mn-cmp">তুলনা</b></button>
+</nav>
+
+<script>
+(function(){
+"use strict";
+
+const BD_CITIES=[
+  {n:"ঢাকা",en:"Dhaka",lat:23.8103,lon:90.4125},
+  {n:"চট্টগ্রাম",en:"Chattogram",lat:22.3569,lon:91.7832},
+  {n:"কক্সবাজার",en:"Cox's Bazar",lat:21.4272,lon:91.9702},
+  {n:"সিলেট",en:"Sylhet",lat:24.8949,lon:91.8687},
+  {n:"রাজশাহী",en:"Rajshahi",lat:24.3745,lon:88.6042},
+  {n:"খুলনা",en:"Khulna",lat:22.8456,lon:89.5403},
+  {n:"বরিশাল",en:"Barishal",lat:22.7010,lon:90.3535},
+  {n:"রংপুর",en:"Rangpur",lat:25.7439,lon:89.2752},
+  {n:"ময়মনসিংহ",en:"Mymensingh",lat:24.7471,lon:90.4203},
+  {n:"সেন্টমার্টিন",en:"Saint Martin",lat:20.6279,lon:92.3230}
+];
+
+const LAYERS=[
+  {k:"rain",bn:"🌧️ বৃষ্টি ও বজ্রপাত",en:"🌧️ Rain & Thunder"},
+  {k:"radar",bn:"📡 ওয়েদার রাডার",en:"📡 Weather Radar"},
+  {k:"satellite",bn:"🛰️ লাইভ স্যাটেলাইট",en:"🛰️ Live Satellite"},
+  {k:"wind",bn:"💨 বাতাস",en:"💨 Wind"},
+  {k:"gust",bn:"🌬️ দমকা হাওয়া",en:"🌬️ Wind Gusts"},
+  {k:"cape",bn:"⚡ ঝড়ের শক্তি CAPE",en:"⚡ CAPE Storm"},
+  {k:"temp",bn:"🌡️ তাপমাত্রা",en:"🌡️ Temperature"},
+  {k:"clouds",bn:"☁️ মেঘ",en:"☁️ Clouds"},
+  {k:"pressure",bn:"🌀 বায়ুর চাপ",en:"🌀 Pressure"},
+  {k:"waves",bn:"🌊 সমুদ্রের ঢেউ",en:"🌊 Sea Waves"},
+  {k:"sst",bn:"🔥 সমুদ্র তাপমাত্রা",en:"🔥 Sea Temp"},
+  {k:"pm2p5",bn:"🫧 বায়ুদূষণ PM2.5",en:"🫧 Air PM2.5"},
+  {k:"rh",bn:"💧 আর্দ্রতা",en:"💧 Humidity"},
+  {k:"capAlerts",bn:"⚠️ সতর্কতা",en:"⚠️ Warnings"}
+];
+const FIXED_OV=["radar","satellite","waves","sst","currents","pm2p5","capAlerts"];
+
+const AIRPORTS=[
+  {c:"DAC",bn:"ঢাকা (DAC)",en:"Dhaka (DAC)",lat:23.8433,lon:90.3978,z:8},
+  {c:"CGP",bn:"চট্টগ্রাম (CGP)",en:"Chattogram (CGP)",lat:22.2496,lon:91.8133,z:8},
+  {c:"ZYL",bn:"সিলেট (ZYL)",en:"Sylhet (ZYL)",lat:24.9632,lon:91.8668,z:8},
+  {c:"CXB",bn:"কক্সবাজার (CXB)",en:"Cox's Bazar (CXB)",lat:21.4522,lon:91.9639,z:8},
+  {c:"JSR",bn:"যশোর (JSR)",en:"Jashore (JSR)",lat:23.1838,lon:89.1608,z:8},
+  {c:"RJH",bn:"রাজশাহী (RJH)",en:"Rajshahi (RJH)",lat:24.4372,lon:88.6165,z:8},
+  {c:"SPD",bn:"সৈয়দপুর (SPD)",en:"Saidpur (SPD)",lat:25.7592,lon:88.9089,z:8},
+  {c:"BD",bn:"পুরো বাংলাদেশ",en:"All Bangladesh",lat:23.7,lon:90.35,z:6}
+];
+
+const COASTS=[
+  {bn:"কক্সবাজার",en:"Cox's Bazar",lat:21.40,lon:91.94},
+  {bn:"সেন্টমার্টিন",en:"Saint Martin",lat:20.60,lon:92.32},
+  {bn:"চট্টগ্রাম বন্দর",en:"Chattogram Port",lat:22.22,lon:91.75},
+  {bn:"মোংলা / সুন্দরবন",en:"Mongla",lat:21.80,lon:89.55},
+  {bn:"পায়রা / কুয়াকাটা",en:"Kuakata",lat:21.81,lon:90.12}
+];
+
+const RIVERS=[
+  {bn:"পদ্মা (মাওয়া)",en:"Padma",lat:23.46,lon:90.26},
+  {bn:"যমুনা (সিরাজগঞ্জ)",en:"Jamuna",lat:24.45,lon:89.72},
+  {bn:"মেঘনা (চাঁদপুর)",en:"Meghna",lat:23.23,lon:90.65},
+  {bn:"সুরমা (সিলেট)",en:"Surma",lat:24.89,lon:91.87},
+  {bn:"তিস্তা (রংপুর)",en:"Teesta",lat:25.79,lon:89.43}
+];
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const S={
+  lang:localStorage.getItem("mp_lang")||"bn",
+  snd:localStorage.getItem("mp_snd")!=="off",
+  loc:{name:"ঢাকা",en:"Dhaka",country:"Bangladesh",lat:23.8103,lon:90.4125,tz:"Asia/Dhaka"},
+  layer:"rain",model:"ecmwf",lastStormPing:0,wxVisual:"clear",
+  data:null,aqi:null,planeLoaded:false,proLoaded:false,coastIdx:0,riverIdx:0,searchT:null
+};
+const T=(b,e)=>S.lang==="bn"?b:e;
+const toast=m=>{const el=$("tst");el.textContent=m;el.classList.add("on");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("on"),3000)};
+
+// Refined Non-Annoying Luxury Audio Engine (Harmonic Sonar Alert + 45s Cooldown)
+const AudioFX={
+  ctx:null,
+  play(kind){
+    if(!S.snd)return;
+    try{
+      if(!this.ctx)this.ctx=new(window.AudioContext||window.webkitAudioContext)();
+      if(this.ctx.state==="suspended")this.ctx.resume();
+      const t=this.ctx.currentTime;
+      if(kind==="storm"){
+        // Gentle futuristic dual-harmonic weather radar sonar chime (NOT harsh thunder noise!)
+        [[587.33,0],[880,.14],[1174.66,.28]].forEach(([f,d])=>{
+          const o=this.ctx.createOscillator(),g=this.ctx.createGain();
+          o.type="sine";o.frequency.setValueAtTime(f,t+d);
+          g.gain.setValueAtTime(.001,t+d);
+          g.gain.linearRampToValueAtTime(.09,t+d+.04);
+          g.gain.exponentialRampToValueAtTime(.0008,t+d+.55);
+          o.connect(g);g.connect(this.ctx.destination);
+          o.start(t+d);o.stop(t+d+.58);
+        });
+      }else{
+        const o=this.ctx.createOscillator(),g=this.ctx.createGain();
+        o.type="sine";o.frequency.setValueAtTime(760,t);o.frequency.exponentialRampToValueAtTime(520,t+.04);
+        g.gain.setValueAtTime(.035,t);g.gain.exponentialRampToValueAtTime(.001,t+.05);
+        o.connect(g);g.connect(this.ctx.destination);o.start(t);o.stop(t+.055);
+      }
+    }catch(e){}
+  }
+};
+
+function wmoInfo(code,isDay){
+  const m={
+    0:{i:isDay?"☀️":"🌙",bn:"পরিষ্কার আকাশ",en:"Clear Sky",v:isDay?"sun":"night"},
+    1:{i:isDay?"🌤️":"🌙",bn:"প্রায় পরিষ্কার",en:"Mostly Clear",v:isDay?"sun":"night"},
+    2:{i:"⛅",bn:"আংশিক মেঘলা",en:"Partly Cloudy",v:isDay?"sun":"night"},
+    3:{i:"☁️",bn:"ঘন মেঘলা",en:"Overcast",v:"rain"},
+    45:{i:"🌫️",bn:"কুয়াশাচ্ছন্ন",en:"Foggy",v:"rain"},
+    48:{i:"🌫️",bn:"ঘন কুয়াশা",en:"Dense Fog",v:"rain"},
+    51:{i:"🌦️",bn:"হালকা গুঁড়ি গুঁড়ি বৃষ্টি",en:"Light Drizzle",v:"rain"},
+    53:{i:"🌦️",bn:"মাঝারি গুঁড়ি বৃষ্টি",en:"Drizzle",v:"rain"},
+    61:{i:"🌧️",bn:"হালকা বৃষ্টি",en:"Light Rain",v:"rain"},
+    63:{i:"🌧️",bn:"মাঝারি বৃষ্টি",en:"Moderate Rain",v:"rain"},
+    65:{i:"🌧️",bn:"ভারী বৃষ্টি",en:"Heavy Rain",v:"rain"},
+    80:{i:"🌦️",bn:"হালকা বর্ষণ",en:"Rain Showers",v:"rain"},
+    81:{i:"🌧️",bn:"মাঝারি বর্ষণ",en:"Heavy Showers",v:"rain"},
+    82:{i:"⛈️",bn:"প্রবল বর্ষণ",en:"Violent Rain",v:"storm"},
+    95:{i:"⛈️",bn:"বজ্রসহ বৃষ্টি (Thunderstorm)",en:"Thunderstorm",v:"storm"},
+    96:{i:"⛈️",bn:"বজ্রসহ শিলাবৃষ্টি",en:"Thunderstorm + Hail",v:"storm"},
+    99:{i:"🌩️",bn:"প্রচণ্ড বজ্রঝড় ও শিলাবৃষ্টি",en:"Severe Thunderstorm",v:"storm"}
+  };
+  return m[code]||{i:"⛅",bn:"পরিবর্তনশীল আবহাওয়া",en:"Variable Weather",v:"clear"};
+}
+
+function dirText(deg){
+  const d=["N","NE","E","SE","S","SW","W","NW"];
+  return d[Math.round(((deg||0)%360)/45)%8];
+}
+
+function fmtTzTime(date,tz){
+  if(!date||isNaN(date.getTime()))return"--:--";
+  try{return new Intl.DateTimeFormat("en-US",{timeZone:tz||"Asia/Dhaka",hour:"2-digit",minute:"2-digit",hour12:true}).format(date)}
+  catch(e){return date.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true})}
+}
+
+// Live Atmospheric Canvas (Rain streaks, Stars, Sun motes & Subtle Storm Shimmer)
+function initCanvas(){
+  const c=$("wxCanvas"),x=c.getContext("2d");let w,h,ps=[];
+  const build=()=>{w=c.width=innerWidth;h=c.height=innerHeight;ps=Array.from({length:65},()=>({x:Math.random()*w,y:Math.random()*h,s:Math.random()*1.8+.6,vx:(Math.random()-.5)*.3,vy:Math.random()*1.2+.4,a:Math.random()*.65+.2}))};
+  build();addEventListener("resize",build);
+  (function loop(){
+    x.clearRect(0,0,w,h);
+    const isRain=S.wxVisual==="rain"||S.wxVisual==="storm";
+    for(const p of ps){
+      if(isRain){
+        p.x-=1.4;p.y+=p.vy*9;
+        if(p.y>h){p.y=-15;p.x=Math.random()*(w+120)}
+        x.strokeStyle=S.wxVisual==="storm"?"rgba(196,181,253,.35)":"rgba(125,211,252,.28)";
+        x.lineWidth=1.1;x.beginPath();x.moveTo(p.x,p.y);x.lineTo(p.x-3,p.y+14);x.stroke();
+      }else{
+        p.x+=p.vx;p.y-=p.vy*.35;
+        if(p.y<-8){p.y=h+8;p.x=Math.random()*w}
+        x.beginPath();x.arc(p.x,p.y,p.s,0,6.283);
+        x.fillStyle=S.wxVisual==="sun"?"rgba(253,224,71,"+p.a*.65+")":"rgba(186,230,253,"+p.a*.75+")";
+        x.fill();
+      }
+    }
+    requestAnimationFrame(loop);
+  })();
+}
+
+function triggerStormVisual(title,desc,forceSound){
+  $("stormTitle").textContent=title;
+  $("stormDesc").textContent=desc;
+  $("stormBar").classList.add("on");
+  document.documentElement.setAttribute("data-wx","storm");
+  S.wxVisual="storm";
+  const fl=$("flashOv");
+  fl.classList.add("zap");setTimeout(()=>fl.classList.remove("zap"),170);
+  setTimeout(()=>{fl.classList.add("zap");setTimeout(()=>fl.classList.remove("zap"),120)},260);
+  const now=Date.now();
+  if(forceSound||now-S.lastStormPing>45000){
+    S.lastStormPing=now;
+    AudioFX.play("storm");
+    if(navigator.vibrate)navigator.vibrate([35,50,35]);
+  }
+}
+
+function updateWindyMap(){
+  const prod=FIXED_OV.includes(S.layer)?"":S.model;
+  const u="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=%C2%B0C&metricWind=km/h&zoom=7&overlay="+S.layer+"&product="+prod+"&level=surface&lat="+S.loc.lat.toFixed(4)+"&lon="+S.loc.lon.toFixed(4)+"&marker=true";
+  $("windyFrame").src=u;
+  const lObj=LAYERS.find(x=>x.k===S.layer)||LAYERS[0];
+  $("activeLayerPill").textContent=(S.lang==="bn"?lObj.bn:lObj.en)+" • "+(prod?prod.toUpperCase():"LIVE");
+  renderLayerChips();
+  ["ecmwf","gfs","icon"].forEach(m=>{const b=$("mod-"+m);if(b)b.style.borderColor=S.model===m?"var(--bdH)":"var(--bd)"});
+}
+
+function renderStaticChips(){
+  $("bdChips").innerHTML=BD_CITIES.map((c,i)=>'<button class="chip '+(Math.abs(c.lat-S.loc.lat)<.08&&Math.abs(c.lon-S.loc.lon)<.08?"on":"")+'" onclick="MP.pickBD('+i+')">📍 '+T(c.n,c.en)+'</button>').join("");
+  renderLayerChips();
+  $("airportChips").innerHTML=AIRPORTS.map((a,i)=>'<button class="chip" onclick="MP.pickAirport('+i+')">✈️ '+T(a.bn,a.en)+'</button>').join("");
+  $("coastChips").innerHTML=COASTS.map((c,i)=>'<button class="chip '+(S.coastIdx===i?"on":"")+'" onclick="MP.pickCoast('+i+')">🌊 '+T(c.bn,c.en)+'</button>').join("");
+  $("riverChips").innerHTML=RIVERS.map((r,i)=>'<button class="chip '+(S.riverIdx===i?"on":"")+'" onclick="MP.pickRiver('+i+')">🏞️ '+T(r.bn,r.en)+'</button>').join("");
+}
+function renderLayerChips(){
+  $("layerChips").innerHTML=LAYERS.map(l=>'<button class="chip '+(S.layer===l.k?"on":"")+'" onclick="MP.setLayer(\''+l.k+'\')">'+T(l.bn,l.en)+'</button>').join("");
+}
+
+function updateLangUI(){
+  $("langBtn").textContent=S.lang==="bn"?"EN":"বাংলা";
+  $("dn-home").textContent=T("🌐 রাডার ও আবহাওয়া","🌐 Live Radar");
+  $("dn-astro").textContent=T("☀️ সূর্য ও চাঁদ","☀️ Sun & Moon");
+  $("dn-plane").textContent=T("✈️ প্লেন রাডার","✈️ Plane Radar");
+  $("dn-pro").textContent=T("🌊 বাংলাদেশ প্রো","🌊 BD Pro Intel");
+  $("dn-cmp").textContent=T("⚖️ ২ শহর তুলনা","⚖️ Compare");
+  $("mn-home").textContent=T("রাডার","Radar");$("mn-astro").textContent=T("সূর্য-চাঁদ","Sun-Moon");
+  $("mn-plane").textContent=T("প্লেন","Planes");$("mn-pro").textContent=T("বিডি প্রো","BD Pro");$("mn-cmp").textContent=T("তুলনা","Compare");
+  $("searchInp").placeholder=T("বাংলাদেশের যেকোনো জেলা/উপজেলা বা বিশ্বের যেকোনো শহর খুঁজুন...","Search any district/upazila in Bangladesh or any city worldwide...");
+  $("lblFeel").textContent=T("অনুভূত","Feels like");$("lblHiLo").textContent=T("সর্বোচ্চ / সর্বনিম্ন","High / Low");
+  $("testStormBtn").textContent=T("⚡ ঝড় অ্যালার্ট টেস্ট","⚡ Test Storm Alert");
+  $("lblRadarTitle").textContent=T("🛰️ লাইভ মাল্টি-লেয়ার রাডার (Windy Engine)","🛰️ Live Multi-Layer Radar (Windy Engine)");
+  $("lblHourly").textContent=T("🕒 আগামী ২৪ ঘণ্টার পূর্বাভাস (ECMWF)","🕒 Next 24-Hour Forecast (ECMWF)");
+  $("lblDaily").textContent=T("📅 আগামী ১০ দিনের বিস্তারিত পূর্বাভাস","📅 10-Day Detailed Forecast");
+  $("lblSunTtl").textContent=T("☀️ সূর্যের গতিপথ ও সময়সূচি (Windy Exact)","☀️ Sun Path & Times (Windy Exact)");
+  $("lblMoonTtl").textContent=T("🌙 চাঁদের সময় ও কলা (Lunar Telemetry)","🌙 Moon Times & Phase");
+  $("lblPlaneTtl").textContent=T("✈️ লাইভ প্লেন রাডার (Bangladesh & Global ADS-B)","✈️ Live Plane Radar (ADS-B)");
+  $("lblModTtl").textContent=T("🧠 ৪ সুপারকম্পিউটার মডেল তুলনা (২৪ ঘণ্টা)","🧠 4-Model Supercomputer Compare (24h)");
+  $("lblMarTtl").textContent=T("🌊 বঙ্গোপসাগর ও উপকূলীয় মেরিন রাডার","🌊 Bay of Bengal Marine Radar");
+  $("lblFldTtl").textContent=T("🏞️ বাংলাদেশ নদী ও বন্যা পূর্বাভাস","🏞️ Bangladesh River & Flood Forecast");
+  $("lblAqiTtl").textContent=T("🫧 লাইভ এয়ার কোয়ালিটি (AQI & Health)","🫧 Live Air Quality (AQI & Health)");
+  $("lblEqTtl").textContent=T("🌋 লাইভ ভূমিকম্প রাডার (বাংলাদেশ ও দক্ষিণ এশিয়া)","🌋 Live Earthquake Radar (South Asia)");
+  $("lblCmpTtl").textContent=T("⚖️ যেকোনো ২ শহরের লাইভ আবহাওয়া তুলনা","⚖️ Any 2 Locations Live Weather Compare");
+  $("cmpBtn").textContent=T("তুলনা করুন","Compare");
+  renderStaticChips();
+  if(S.data)renderMainWeather();
+  renderAstronomy();
+}
+
+async function fetchMainWeather(){
+  const{lat,lon}=S.loc;
+  $("locFull").textContent=T(S.loc.name,S.loc.en)+(S.loc.country?", "+S.loc.country:"");
+  $("locShort").textContent=S.loc.en;
+  $("locCoords").textContent=lat.toFixed(2)+"°N, "+lon.toFixed(2)+"°E • ECMWF Live";
+
+  const wUrl="https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,dew_point_2m,precipitation_probability,precipitation,weather_code,visibility,wind_speed_10m,wind_gusts_10m,uv_index,cape&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,uv_index_max&timezone=auto&forecast_days=10";
+  const aUrl="https://air-quality-api.open-meteo.com/v1/air-quality?latitude="+lat+"&longitude="+lon+"&current=us_aqi,pm10,pm2_5,dust,ozone,uv_index";
+
+  try{
+    const[wr,ar]=await Promise.all([fetch(wUrl).then(r=>r.json()),fetch(aUrl).then(r=>r.json()).catch(()=>null)]);
+    S.data=wr;S.aqi=ar;
+    if(wr.timezone)S.loc.tz=wr.timezone;
+    renderMainWeather();
+    renderAstronomy();
+    renderAQI();
+  }catch(e){toast(T("আবহাওয়া লোড করতে সমস্যা হয়েছে!","Failed to load weather data!"))}
+}
+
+function renderMainWeather(){
+  const d=S.data;if(!d||!d.current)return;
+  const c=d.current,h=d.hourly,dy=d.daily;
+  const nowIdx=Math.max(0,h.time.findIndex(t=>t.slice(0,13)===c.time.slice(0,13)));
+  const info=wmoInfo(c.weather_code,c.is_day===1);
+
+  document.documentElement.setAttribute("data-wx",info.v);
+  S.wxVisual=info.v;
+
+  $("wxEmoji").textContent=info.i;
+  $("curTemp").textContent=Math.round(c.temperature_2m)+"°C";
+  $("curCond").textContent=T(info.bn,info.en);
+  $("curFeel").textContent=Math.round(c.apparent_temperature)+"°C";
+  $("curHiLo").textContent=Math.round(dy.temperature_2m_max[0])+"° / "+Math.round(dy.temperature_2m_min[0])+"°";
+
+  const cape=Math.round(h.cape[nowIdx]||0);
+  const rainProb=h.precipitation_probability[nowIdx]||0;
+  const visKm=((h.visibility[nowIdx]||10000)/1000).toFixed(1);
+  const dew=Math.round(h.dew_point_2m[nowIdx]||0);
+  const uv=(h.uv_index[nowIdx]||0).toFixed(1);
+
+  $("mWind").textContent=Math.round(c.wind_speed_10m)+" / "+Math.round(c.wind_gusts_10m)+" km/h "+dirText(c.wind_direction_10m);
+  $("mRain").textContent=(c.precipitation||0).toFixed(1)+"mm ("+rainProb+"%)";
+  $("mHum").textContent=c.relative_humidity_2m+"% / "+dew+"°C";
+  $("mPres").textContent=Math.round(c.pressure_msl)+" hPa • "+visKm+"km";
+  $("mCape").textContent=cape+" J/kg";
+  $("mUv").textContent=uv;
+  $("mCld").textContent=c.cloud_cover+"%";
+
+  // Live Thunderstorm / Kalboishakhi Detection
+  const isStormCode=[95,96,99,82].includes(c.weather_code);
+  const maxNext6Cape=Math.max(...h.cape.slice(nowIdx,nowIdx+6).map(x=>x||0));
+  const maxNext6Gust=Math.max(...h.wind_gusts_10m.slice(nowIdx,nowIdx+6).map(x=>x||0));
+  const badge=$("stormRiskBadge");
+
+  if(isStormCode||cape>=1500||c.wind_gusts_10m>=52){
+    badge.className="risk-pill risk-hi";badge.textContent=T("⚡ বজ্রঝড়ের উচ্চ ঝুঁকি!","⚡ HIGH STORM ALERT!");
+    triggerStormVisual(
+      T("⚡ সক্রিয় বজ্রপাত ও ঝড় শনাক্ত — "+S.loc.name,"⚡ Active Thunderstorm Alert — "+S.loc.en),
+      T("বজ্রশক্তি (CAPE): "+cape+" J/kg • দমকা হাওয়া: "+Math.round(c.wind_gusts_10m)+" কি.মি./ঘণ্টা। নিরাপদ আশ্রয়ে থাকুন।","CAPE: "+cape+" J/kg • Gusts: "+Math.round(c.wind_gusts_10m)+" km/h. Seek shelter."),
+      false
+    );
+  }else if(maxNext6Cape>=900||maxNext6Gust>=38||rainProb>=65){
+    badge.className="risk-pill risk-mid";badge.textContent=T("🌩️ ঝড়-বৃষ্টির সম্ভাবনা","🌩️ Moderate Storm Risk");
+    $("stormBar").classList.remove("on");
+  }else{
+    badge.className="risk-pill risk-low";badge.textContent=T("⚡ ঝড়ের ঝুঁকি: নিরাপদ","⚡ Storm Risk: Low");
+    $("stormBar").classList.remove("on");
+  }
+
+  // Smart Bilingual AI Weather Briefing
+  const maxRainProbToday=dy.precipitation_probability_max[0]||0;
+  const maxRainSum=dy.precipitation_sum[0]||0;
+  const briefBn="✨ স্মার্ট ব্রিফিং ("+S.loc.name+"): বর্তমানে "+info.bn+", তাপমাত্রা "+Math.round(c.temperature_2m)+"°C (অনুভূত "+Math.round(c.apparent_temperature)+"°C)। আজ বৃষ্টির সর্বোচ্চ সম্ভাবনা "+maxRainProbToday+"% ("+maxRainSum.toFixed(1)+" মি.মি.) এবং বাতাসের গতি "+Math.round(c.wind_speed_10m)+" কি.মি./ঘণ্টা। "+(maxRainProbToday>=50?"বাইরে বের হলে ছাতা সাথে রাখুন।":c.temperature_2m>=34?"রোদ ও গরম বেশি, পর্যাপ্ত পানি পান করুন।":"আবহাওয়া তুলনামূলকভাবে আরামদায়ক ও স্বাভাবিক রয়েছে।");
+  const briefEn="✨ Smart Briefing ("+S.loc.en+"): Currently "+info.en+" at "+Math.round(c.temperature_2m)+"°C (feels "+Math.round(c.apparent_temperature)+"°C). Today's peak rain probability is "+maxRainProbToday+"% ("+maxRainSum.toFixed(1)+" mm) with "+Math.round(c.wind_speed_10m)+" km/h wind. "+(maxRainProbToday>=50?"Carry an umbrella outdoors.":c.temperature_2m>=34?"High heat — stay hydrated.":"Conditions remain largely comfortable.");
+  $("aiBrief").textContent=T(briefBn,briefEn);
+
+  // 24-Hour Forecast Strip
+  let hHtml="";
+  for(let i=nowIdx;i<Math.min(nowIdx+24,h.time.length);i++){
+    const hr=h.time[i].slice(11,16);
+    const wi=wmoInfo(h.weather_code[i],Number(hr.slice(0,2))>=6&&Number(hr.slice(0,2))<18);
+    hHtml+='<div class="hcard"><div style="font-size:.76rem;color:var(--mut)">'+hr+'</div><div style="font-size:1.6rem;margin:4px 0">'+wi.i+'</div><div style="font-family:var(--num);font-weight:800;font-size:1rem">'+Math.round(h.temperature_2m[i])+'°</div><div style="font-size:.72rem;color:#7dd3fc">💧'+(h.precipitation_probability[i]||0)+'%</div><div style="font-size:.7rem;color:var(--mut)">💨'+Math.round(h.wind_speed_10m[i])+'</div></div>';
+  }
+  $("hourlyStrip").innerHTML=hHtml;
+
+  // 10-Day Detailed List
+  const daysBn=["রবি","সোম","মঙ্গল","বুধ","বৃহঃ","শুক্র","শনি"],daysEn=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  $("dailyList").innerHTML=dy.time.map((dt,i)=>{
+    const obj=new Date(dt+"T12:00:00");
+    const dn=i===0?T("আজ","Today"):(S.lang==="bn"?daysBn[obj.getDay()]:daysEn[obj.getDay()])+" "+dt.slice(5);
+    const wi=wmoInfo(dy.weather_code[i],true);
+    return'<div class="dcard"><div style="font-weight:700">'+dn+'</div><div style="font-size:1.35rem">'+wi.i+'</div><div style="font-size:.82rem;color:var(--soft)">💧'+(dy.precipitation_probability_max[i]||0)+'% • '+(dy.precipitation_sum[i]||0).toFixed(1)+'mm • 💨'+Math.round(dy.wind_speed_10m_max[i])+'</div><div style="font-family:var(--num);font-weight:800;color:var(--c1);white-space:nowrap">'+Math.round(dy.temperature_2m_max[i])+'° / <span style="color:var(--mut)">'+Math.round(dy.temperature_2m_min[i])+'°</span></div></div>';
+  }).join("");
+}
+
+// Windy-Exact Astronomical Sun & Moon Engine (SunCalc)
+function renderAstronomy(){
+  if(typeof SunCalc==="undefined")return;
+  const now=new Date(),{lat,lon,tz}=S.loc;
+  const st=SunCalc.getTimes(now,lat,lon);
+  const sp=SunCalc.getPosition(now,lat,lon);
+  const mt=SunCalc.getMoonTimes(now,lat,lon);
+  const mp=SunCalc.getMoonPosition(now,lat,lon);
+  const mi=SunCalc.getMoonIllumination(now);
+
+  $("vSunrise").textContent=fmtTzTime(st.sunrise,tz);
+  $("vSunset").textContent=fmtTzTime(st.sunset,tz);
+  $("vDawn").textContent=fmtTzTime(st.dawn,tz);
+  $("vDusk").textContent=fmtTzTime(st.dusk,tz);
+  $("vNoon").textContent=fmtTzTime(st.solarNoon,tz);
+  $("vGold").textContent=fmtTzTime(st.goldenHour,tz);
+  const dayMs=Math.max(0,(st.sunset-st.sunrise));
+  const dh=Math.floor(dayMs/3600000),dm=Math.floor((dayMs%3600000)/60000);
+  $("vDayLen").textContent=dh+"h "+dm+"m";
+  $("vSunAlt").textContent=(sp.altitude*180/Math.PI).toFixed(1)+"°";
+
+  // SVG Sun Arc exact live progress
+  const pct=Math.max(0,Math.min(1,(now-st.sunrise)/(st.sunset-st.sunrise)));
+  const ang=Math.PI*(1-pct);
+  const sx=180+150*Math.cos(ang),sy=145-122*Math.sin(ang);
+  $("sunDot").setAttribute("cx",sx.toFixed(1));$("sunDot").setAttribute("cy",sy.toFixed(1));
+  $("sunGlowOrb").setAttribute("cx",sx.toFixed(1));$("sunGlowOrb").setAttribute("cy",sy.toFixed(1));
+  const pathLen=430;
+  $("sunProgPath").setAttribute("stroke-dasharray",pathLen);
+  $("sunProgPath").setAttribute("stroke-dashoffset",(pathLen*(1-pct)).toFixed(1));
+  $("svgRise").textContent=fmtTzTime(st.sunrise,tz);
+  $("svgNoon").textContent=fmtTzTime(st.solarNoon,tz);
+  $("svgSet").textContent=fmtTzTime(st.sunset,tz);
+  $("sunPctPill").textContent=T("দিনের অগ্রগতি ","Daylight ")+Math.round(pct*100)+"%";
+
+  // Moon Telemetry
+  $("vMoonrise").textContent=mt.rise?fmtTzTime(mt.rise,tz):"--:--";
+  $("vMoonset").textContent=mt.set?fmtTzTime(mt.set,tz):"--:--";
+  $("vMoonAlt").textContent=(mp.altitude*180/Math.PI).toFixed(1)+"°";
+  $("vMoonAz").textContent=(((mp.azimuth*180/Math.PI)+180)%360).toFixed(0)+"°";
+  const ph=mi.phase,ill=Math.round(mi.fraction*100);
+  const phases=[
+    {e:"🌑",bn:"অমাবস্যা (নতুন চাঁদ)",en:"New Moon"},
+    {e:"🌒",bn:"শুক্লপক্ষের প্রথমা চাঁদ",en:"Waxing Crescent"},
+    {e:"🌓",bn:"প্রথম চতুর্থাংশ",en:"First Quarter"},
+    {e:"🌔",bn:"শুক্লপক্ষ (প্রায় পূর্ণিমা)",en:"Waxing Gibbous"},
+    {e:"🌕",bn:"পূর্ণিমা",en:"Full Moon"},
+    {e:"🌖",bn:"কৃষ্ণপক্ষ (ক্ষয়িষ্ণু)",en:"Waning Gibbous"},
+    {e:"🌗",bn:"শেষ চতুর্থাংশ",en:"Last Quarter"},
+    {e:"🌘",bn:"কৃষ্ণপক্ষের শেষ চাঁদ",en:"Waning Crescent"}
+  ];
+  const pObj=phases[Math.round(ph*8)%8];
+  $("moonEmoji").textContent=pObj.e;
+  $("moonPhaseName").textContent=T(pObj.bn,pObj.en);
+  $("moonIllumTxt").textContent=T("আলোকচ্ছটা: ","Illumination: ")+ill+"%";
+  $("moonPctPill").textContent=ill+"% 🌙";
+}
+
+function renderAQI(){
+  const a=S.aqi&&S.aqi.current;
+  if(!a){$("mAqi").textContent="--";return}
+  const q=Math.round(a.us_aqi||0);
+  $("mAqi").textContent="AQI "+q;
+  $("aqVal").textContent=q;
+  $("aqPm25").textContent=(a.pm2_5||0).toFixed(1);
+  $("aqPm10").textContent=(a.pm10||0).toFixed(1);
+  $("aqDust").textContent=Math.round(a.dust||0)+" / "+Math.round(a.ozone||0);
+  const bd=$("aqiBadge");
+  if(q<=50){bd.className="risk-pill risk-low";bd.textContent=T("ভালো","Good");$("aqiAdvice").textContent=T("✅ বাতাস বিশুদ্ধ, বাইরে চলাফেরার জন্য নিরাপদ।","✅ Clean air, safe for outdoor activity.")}
+  else if(q<=150){bd.className="risk-pill risk-mid";bd.textContent=T("মাঝারি / সংবেদনশীল","Moderate");$("aqiAdvice").textContent=T("⚠️ ধুলোবালি কিছুটা বেশি, সংবেদনশীলদের মাস্ক পরা ভালো।","⚠️ Moderate pollution, sensitive groups should wear a mask.")}
+  else{bd.className="risk-pill risk-hi";bd.textContent=T("অস্বাস্থ্যকর!","Unhealthy!");$("aqiAdvice").textContent=T("😷 বায়ুদূষণ বেশি! বাইরে বের হলে অবশ্যই মাস্ক ব্যবহার করুন।","😷 High air pollution! Wear a mask outdoors.")}
+}
+
+async function loadProTab(){
+  const{lat,lon}=S.loc;
+  // 1. 4-Model Supercomputer Comparison (ECMWF IFS, ECMWF AIFS AI, GFS, ICON)
+  const mods=[
+    {id:"ecmwf_ifs025",nm:"ECMWF IFS (Europe)"},
+    {id:"ecmwf_aifs025",nm:"ECMWF AIFS (AI)"},
+    {id:"gfs_seamless",nm:"NOAA GFS (USA)"},
+    {id:"icon_seamless",nm:"DWD ICON (Germany)"}
+  ];
+  const mRes=await Promise.all(mods.map(m=>
+    fetch("https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&hourly=temperature_2m,precipitation,wind_speed_10m&models="+m.id+"&forecast_days=1&timezone=auto")
+      .then(r=>r.json()).then(j=>({nm:m.nm,j})).catch(()=>({nm:m.nm,j:null}))
+  ));
+  $("modelBody").innerHTML=mRes.map(({nm,j})=>{
+    if(!j||!j.hourly||!j.hourly.temperature_2m)return'<tr><td>'+nm+'</td><td colspan="3" style="color:var(--mut)">N/A</td></tr>';
+    const ts=j.hourly.temperature_2m.filter(x=>x!=null),rs=j.hourly.precipitation.filter(x=>x!=null),ws=j.hourly.wind_speed_10m.filter(x=>x!=null);
+    const mxT=ts.length?Math.round(Math.max(...ts)):"--",mnT=ts.length?Math.round(Math.min(...ts)):"--";
+    const sumR=rs.reduce((a,b)=>a+b,0).toFixed(1),mxW=ws.length?Math.round(Math.max(...ws)):"--";
+    return'<tr><td style="font-weight:700;color:var(--c1);text-align:left">'+nm+'</td><td>'+mxT+'° / '+mnT+'°</td><td style="color:#7dd3fc">'+sumR+' mm</td><td>'+mxW+' km/h</td></tr>';
+  }).join("");
+
+  loadMarine();loadFlood();loadQuakes();
+}
+
+async function loadMarine(){
+  const c=COASTS[S.coastIdx];
+  try{
+    const j=await fetch("https://marine-api.open-meteo.com/v1/marine?latitude="+c.lat+"&longitude="+c.lon+"&current=wave_height,wave_direction,wave_period,swell_wave_height").then(r=>r.json());
+    const m=j.current||{};
+    const wh=(m.wave_height||0);
+    $("marWave").textContent=wh.toFixed(2)+" m";
+    $("marSwell").textContent=(m.swell_wave_height||0).toFixed(2)+" m";
+    $("marPer").textContent=(m.wave_period||0).toFixed(1)+" s";
+    $("marDir").textContent=Math.round(m.wave_direction||0)+"° "+dirText(m.wave_direction);
+    const bd=$("seaBadge");
+    if(wh>=2.5){bd.className="risk-pill risk-hi";bd.textContent=T("উত্তাল সাগর!","Rough Sea!")}
+    else if(wh>=1.3){bd.className="risk-pill risk-mid";bd.textContent=T("মাঝারি ঢেউ","Moderate Swell")}
+    else{bd.className="risk-pill risk-low";bd.textContent=T("শান্ত সাগর","Calm Sea")}
+  }catch(e){}
+}
+
+async function loadFlood(){
+  const r=RIVERS[S.riverIdx];
+  try{
+    const j=await fetch("https://flood-api.open-meteo.com/v1/flood?latitude="+r.lat+"&longitude="+r.lon+"&daily=river_discharge,river_discharge_mean,river_discharge_max&forecast_days=7").then(r=>r.json());
+    const arr=(j.daily&&j.daily.river_discharge)||[];
+    const nowV=arr[0]||0,maxV=Math.max(...arr.map(x=>x||0));
+    $("fldNow").textContent=Math.round(nowV).toLocaleString()+" m³/s";
+    $("fldMax").textContent=Math.round(maxV).toLocaleString()+" m³/s";
+    const bd=$("fldBadge");
+    if(maxV>nowV*1.45&&maxV>1500){bd.className="risk-pill risk-hi";bd.textContent=T("পানি বাড়ার ঝুঁকি","Rising Water")}
+    else{bd.className="risk-pill risk-low";bd.textContent=T("স্বাভাবিক প্রবাহ","Normal Flow")}
+  }catch(e){}
+}
+
+async function loadQuakes(){
+  try{
+    const j=await fetch("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson").then(r=>r.json());
+    const near=(j.features||[]).filter(f=>{const[ln,lt]=f.geometry.coordinates;return lt>=10&&lt<=34&&ln>=78&&ln<=104}).slice(0,8);
+    $("eqList").innerHTML=near.length?near.map(f=>{
+      const p=f.properties,dep=Math.round(f.geometry.coordinates[2]||0),mag=(p.mag||0).toFixed(1);
+      const cls=p.mag>=5?"risk-hi":p.mag>=4?"risk-mid":"risk-low";
+      return'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07)"><div><div style="font-weight:700;color:var(--c1)">'+esc(p.place)+'</div><div style="font-size:.74rem;color:var(--mut)">'+new Date(p.time).toLocaleString("bn-BD")+' • গভীরতা '+dep+' km</div></div><span class="risk-pill '+cls+'">M '+mag+'</span></div>';
+    }).join(""):'<div style="color:var(--ok);padding:12px">'+T("✅ গত ৭ দিনে বাংলাদেশ ও আশপাশে কোনো উল্লেখযোগ্য ভূমিকম্প নেই।","✅ No significant earthquakes near Bangladesh in the past 7 days.")+'</div>';
+  }catch(e){$("eqList").textContent="USGS feed unavailable."}
+}
+
+function loadPlaneMap(idx){
+  const a=AIRPORTS[idx||0];
+  $("airportBadge").textContent="✈️ "+T(a.bn,a.en);
+  $("planeFrame").src="https://globe.airplanes.live/?lat="+a.lat+"&lon="+a.lon+"&zoom="+a.z+"&hideButtons=true";
+  S.planeLoaded=true;
+}
+
+window.MP={
+  tab(t){
+    AudioFX.play("click");
+    document.querySelectorAll(".vw").forEach(v=>v.classList.remove("on"));
+    $("v-"+t).classList.add("on");
+    document.querySelectorAll("[data-t]").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+    if(t==="plane"&&!S.planeLoaded)loadPlaneMap(0);
+    if(t==="pro"){loadProTab();S.proLoaded=true}
+    if(t==="cmp"&&$("cmpOut").children.length<2)MP.runCompare();
+    scrollTo({top:0,behavior:"smooth"});
+  },
+  toggleLang(){
+    AudioFX.play("click");
+    S.lang=S.lang==="bn"?"en":"bn";
+    localStorage.setItem("mp_lang",S.lang);
+    updateLangUI();
+  },
+  toggleSound(){
+    S.snd=!S.snd;localStorage.setItem("mp_snd",S.snd?"on":"off");
+    $("sndBtn").textContent=S.snd?"🔊":"🔇";
+    if(S.snd)AudioFX.play("click");
+    toast(S.snd?T("🔊 সাউন্ড চালু","🔊 Sound ON"):T("🔇 সাউন্ড মিউট","🔇 Sound Muted"));
+  },
+  pickBD(i){
+    AudioFX.play("click");const c=BD_CITIES[i];
+    S.loc={name:c.n,en:c.en,country:"Bangladesh",lat:c.lat,lon:c.lon,tz:"Asia/Dhaka"};
+    renderStaticChips();fetchMainWeather();updateWindyMap();
+    if(S.proLoaded)loadProTab();
+  },
+  searchCity(immediate){
+    clearTimeout(S.searchT);
+    const q=$("searchInp").value.trim(),dr=$("sdrop");
+    if(q.length<2){dr.classList.remove("on");return}
+    S.searchT=setTimeout(async()=>{
+      try{
+        const j=await fetch("https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(q)+"&count=7&language=en&format=json").then(r=>r.json());
+        const res=j.results||[];
+        if(!res.length){dr.innerHTML='<div class="sopt">No location found</div>';dr.classList.add("on");return}
+        S._sres=res;
+        dr.innerHTML=res.map((r,i)=>'<div class="sopt" onclick="MP.pickSearch('+i+')"><span>📍 <b>'+esc(r.name)+'</b>'+(r.admin1?", "+esc(r.admin1):"")+'</span><span style="font-size:.76rem;color:var(--c2)">'+esc(r.country||"")+'</span></div>').join("");
+        dr.classList.add("on");
+      }catch(e){}
+    },immediate?10:280);
+  },
+  pickSearch(i){
+    const r=S._sres&&S._sres[i];if(!r)return;
+    $("sdrop").classList.remove("on");$("searchInp").value=r.name;
+    S.loc={name:r.name,en:r.name,country:r.country||"",lat:r.latitude,lon:r.longitude,tz:r.timezone||"Asia/Dhaka"};
+    renderStaticChips();fetchMainWeather();updateWindyMap();
+    if(S.proLoaded)loadProTab();
+    toast("📍 "+r.name);
+  },
+  useGPS(){
+    AudioFX.play("click");
+    if(!navigator.geolocation){toast("GPS supported নয়");return}
+    toast(T("📡 আপনার GPS লোকেশন শনাক্ত হচ্ছে...","📡 Detecting GPS location..."));
+    navigator.geolocation.getCurrentPosition(p=>{
+      S.loc={name:T("আপনার অবস্থান","My Location"),en:"My Location",country:"",lat:p.coords.latitude,lon:p.coords.longitude,tz:Intl.DateTimeFormat().resolvedOptions().timeZone||"Asia/Dhaka"};
+      fetchMainWeather();updateWindyMap();if(S.proLoaded)loadProTab();
+      toast(T("✅ সঠিক GPS লোকেশন সেট হয়েছে","✅ Exact GPS location loaded"));
+    },()=>toast(T("GPS পারমিশন দেওয়া হয়নি","GPS permission denied")),{enableHighAccuracy:true});
+  },
+  setLayer(k){AudioFX.play("click");S.layer=k;updateWindyMap()},
+  setModel(m){AudioFX.play("click");S.model=m;updateWindyMap()},
+  toggleFS(id){AudioFX.play("click");$(id).classList.toggle("fs")},
+  refreshAll(){AudioFX.play("click");fetchMainWeather();updateWindyMap();if(S.proLoaded)loadProTab();toast(T("🔄 লাইভ ডেটা আপডেট হচ্ছে...","🔄 Refreshing live data..."))},
+  testStormAlert(){
+    triggerStormVisual(
+      T("⚡ বজ্রপাত ও কালবৈশাখী সতর্কতা (টেস্ট প্রিভিউ)","⚡ Live Thunderstorm & Lightning Alert (Preview)"),
+      T("এভাবেই কোনো স্থানে বজ্রঝড় শনাক্ত হলে সাথে সাথে অ্যালার্ট ও মৃদু সোনার সাউন্ড বাজবে (বিরক্তিকর ছাড়াই)।","Refined sonar alert + lightning pulse triggers automatically during active storms with anti-spam cooldown."),
+      true
+    );
+  },
+  dismissStorm(){$("stormBar").classList.remove("on")},
+  pickAirport(i){AudioFX.play("click");loadPlaneMap(i)},
+  pickCoast(i){AudioFX.play("click");S.coastIdx=i;renderStaticChips();loadMarine()},
+  pickRiver(i){AudioFX.play("click");S.riverIdx=i;renderStaticChips();loadFlood()},
+  async runCompare(){
+    AudioFX.play("click");
+    const qa=$("cmpA").value.trim()||"Dhaka",qb=$("cmpB").value.trim()||"Cox's Bazar";
+    $("cmpOut").innerHTML='<div style="color:var(--c2)">'+T("✨ ২ শহরের লাইভ ডেটা লোড হচ্ছে...","✨ Fetching live comparison...")+'</div>';
+    const loadOne=async(q)=>{
+      const g=await fetch("https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(q)+"&count=1&format=json").then(r=>r.json());
+      const r=g.results&&g.results[0];if(!r)return null;
+      const w=await fetch("https://api.open-meteo.com/v1/forecast?latitude="+r.latitude+"&longitude="+r.longitude+"&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,precipitation,weather_code,is_day&timezone=auto").then(x=>x.json());
+      const st=typeof SunCalc!=="undefined"?SunCalc.getTimes(new Date(),r.latitude,r.longitude):null;
+      return{r,w,st};
+    };
+    const[a,b]=await Promise.all([loadOne(qa),loadOne(qb)]);
+    const card=(x)=>{
+      if(!x)return'<div class="card">Location not found</div>';
+      const c=x.w.current,wi=wmoInfo(c.weather_code,c.is_day===1);
+      return'<div class="card" style="margin:0"><div class="shd"><div class="ttl">📍 '+esc(x.r.name)+', '+esc(x.r.country||"")+'</div><span style="font-size:1.8rem">'+wi.i+'</span></div><div class="big-temp" style="font-size:2.6rem;margin-bottom:6px">'+Math.round(c.temperature_2m)+'°C</div><div style="color:var(--c1);font-weight:600;margin-bottom:10px">'+T(wi.bn,wi.en)+'</div><div class="mgrid" style="grid-template-columns:1fr 1fr"><div class="mbox"><div class="mlbl">💨 Wind</div><div class="mval">'+Math.round(c.wind_speed_10m)+' km/h</div></div><div class="mbox"><div class="mlbl">💧 Humidity</div><div class="mval">'+c.relative_humidity_2m+'%</div></div><div class="mbox"><div class="mlbl">🌅 Sunrise</div><div class="mval">'+(x.st?fmtTzTime(x.st.sunrise,x.w.timezone):"--")+'</div></div><div class="mbox"><div class="mlbl">🌇 Sunset</div><div class="mval">'+(x.st?fmtTzTime(x.st.sunset,x.w.timezone):"--")+'</div></div></div></div>';
+    };
+    $("cmpOut").innerHTML=card(a)+card(b);
+  }
+};
+
+// Live BST Clock
+setInterval(()=>{
+  const n=new Date(),b=new Date(n.getTime()+n.getTimezoneOffset()*60000+21600000);
+  const h=b.getHours();
+  $("liveClk").textContent="BST "+String(h%12||12).padStart(2,"0")+":"+String(b.getMinutes()).padStart(2,"0")+":"+String(b.getSeconds()).padStart(2,"0")+" "+(h>=12?"PM":"AM");
+},1000);
+
+document.addEventListener("click",e=>{if(!e.target.closest(".sbar-wrap"))$("sdrop").classList.remove("on")});
+$("sndBtn").textContent=S.snd?"🔊":"🔇";
+initCanvas();
+updateLangUI();
+fetchMainWeather();
+updateWindyMap();
+setInterval(fetchMainWeather,300000);
+})();
+</script>
+</body>
+                                                                                                              </html>
